@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Standings - Madden 26 Tracker{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Standings</h1>
+
+{% if not divisions %}
+<div class="alert alert-warning">
+    No standings data yet. Export standings from the Companion App.
+</div>
+{% endif %}
+
+{% for div_name, entries in divisions.items() %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">{{ div_name }}</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Team</th>
+                    <th class="text-center">W</th>
+                    <th class="text-center">L</th>
+                    <th class="text-center">T</th>
+                    <th class="text-center">Div</th>
+                    <th class="text-center">Conf</th>
+                    <th class="text-center">PF</th>
+                    <th class="text-center">PA</th>
+                    <th class="text-center">Streak</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                {% set s = entry.standing %}
+                {% set team = entry.team %}
+                <tr>
+                    <td>
+                        <strong>{{ team.display_name if team else 'Team ' ~ s.team_id }}</strong>
+                    </td>
+                    <td class="text-center">{{ s.total_wins or 0 }}</td>
+                    <td class="text-center">{{ s.total_losses or 0 }}</td>
+                    <td class="text-center">{{ s.total_ties or 0 }}</td>
+                    <td class="text-center">{{ s.div_wins or 0 }}-{{ s.div_losses or 0 }}</td>
+                    <td class="text-center">{{ s.conf_wins or 0 }}-{{ s.conf_losses or 0 }}</td>
+                    <td class="text-center">{{ s.points_for or 0 }}</td>
+                    <td class="text-center">{{ s.points_against or 0 }}</td>
+                    <td class="text-center">
+                        {% if s.streak_count %}
+                            {{ s.streak_type[0] if s.streak_type else '' }}{{ s.streak_count }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

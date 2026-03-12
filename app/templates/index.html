@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Madden 26 Tracker{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Dashboard</h1>
+
+<div class="card bg-body-tertiary mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Companion App Export URL</h5>
+        <p class="text-secondary mb-2">
+            Paste this URL into the Madden Companion App's export field.
+            Start <code>ngrok http 5000</code> first and copy the ngrok URL.
+        </p>
+        <div class="input-group">
+            <input type="text" id="export-url" class="form-control font-monospace"
+                   value="YOUR_NGROK_URL_HERE" placeholder="https://abc123.ngrok-free.app">
+            <button class="btn btn-outline-light" onclick="navigator.clipboard.writeText(document.getElementById('export-url').value)">
+                Copy
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="mb-0">{{ team_count }}</h2>
+                <small class="text-secondary">Teams</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="mb-0">{{ player_count }}</h2>
+                <small class="text-secondary">Players</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="mb-0">{{ weeks_with_data }}</h2>
+                <small class="text-secondary">Weeks of Data</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h2 class="mb-0">{{ export_count }}</h2>
+                <small class="text-secondary">Total Exports</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if last_export %}
+<div class="alert alert-info">
+    Last export received: <strong>{{ last_export.received_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</strong>
+    &mdash; {{ last_export.data_type }}
+</div>
+{% else %}
+<div class="alert alert-warning">
+    No exports received yet. Set up ngrok and export from the Companion App to get started.
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-md-3">
+        <a href="/standings" class="card text-decoration-none">
+            <div class="card-body text-center">
+                <h5>Standings</h5>
+                <small class="text-secondary">View team records</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/schedule" class="card text-decoration-none">
+            <div class="card-body text-center">
+                <h5>Schedule</h5>
+                <small class="text-secondary">Weekly matchups</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/roster" class="card text-decoration-none">
+            <div class="card-body text-center">
+                <h5>Roster</h5>
+                <small class="text-secondary">Player rosters</small>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/stats" class="card text-decoration-none">
+            <div class="card-body text-center">
+                <h5>Stats</h5>
+                <small class="text-secondary">Player statistics</small>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

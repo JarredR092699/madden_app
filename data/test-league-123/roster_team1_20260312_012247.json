@@ -1,0 +1,28 @@
+{
+  "rosterInfoList": [
+    {
+      "rosterId": 101,
+      "firstName": "Patrick",
+      "lastName": "Mahomes",
+      "position": "QB",
+      "playerBestOvr": 99,
+      "age": 29,
+      "jerseyNum": 15,
+      "college": "Texas Tech",
+      "yearsPro": 8,
+      "devTrait": "X-Factor"
+    },
+    {
+      "rosterId": 102,
+      "firstName": "Travis",
+      "lastName": "Kelce",
+      "position": "TE",
+      "playerBestOvr": 96,
+      "age": 35,
+      "jerseyNum": 87,
+      "college": "Cincinnati",
+      "yearsPro": 12,
+      "devTrait": "Superstar"
+    }
+  ]
+}

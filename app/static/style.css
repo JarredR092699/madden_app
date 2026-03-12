@@ -1,0 +1,15 @@
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.card {
+    transition: transform 0.1s;
+}
+
+a.card:hover {
+    transform: translateY(-2px);
+}
+
+.navbar-brand {
+    letter-spacing: 0.5px;
+}

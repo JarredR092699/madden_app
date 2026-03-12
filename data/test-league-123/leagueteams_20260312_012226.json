@@ -1,0 +1,31 @@
+{
+  "leagueTeamInfoList": [
+    {
+      "teamId": 1,
+      "cityName": "Kansas City",
+      "nickName": "Chiefs",
+      "abbrName": "KC",
+      "divName": "AFC West",
+      "conferenceId": "AFC",
+      "ovrRating": 92
+    },
+    {
+      "teamId": 2,
+      "cityName": "Philadelphia",
+      "nickName": "Eagles",
+      "abbrName": "PHI",
+      "divName": "NFC East",
+      "conferenceId": "NFC",
+      "ovrRating": 90
+    },
+    {
+      "teamId": 3,
+      "cityName": "Dallas",
+      "nickName": "Cowboys",
+      "abbrName": "DAL",
+      "divName": "NFC East",
+      "conferenceId": "NFC",
+      "ovrRating": 85
+    }
+  ]
+}

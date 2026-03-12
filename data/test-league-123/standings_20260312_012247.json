@@ -1,0 +1,40 @@
+{
+  "teamStandingInfoList": [
+    {
+      "teamId": 1,
+      "totalWins": 11,
+      "totalLosses": 2,
+      "totalTies": 0,
+      "divWins": 4,
+      "divLosses": 0,
+      "confWins": 8,
+      "confLosses": 1,
+      "ptsFor": 350,
+      "ptsAgainst": 210
+    },
+    {
+      "teamId": 2,
+      "totalWins": 10,
+      "totalLosses": 3,
+      "totalTies": 0,
+      "divWins": 3,
+      "divLosses": 1,
+      "confWins": 7,
+      "confLosses": 2,
+      "ptsFor": 310,
+      "ptsAgainst": 220
+    },
+    {
+      "teamId": 3,
+      "totalWins": 7,
+      "totalLosses": 6,
+      "totalTies": 0,
+      "divWins": 2,
+      "divLosses": 2,
+      "confWins": 5,
+      "confLosses": 4,
+      "ptsFor": 280,
+      "ptsAgainst": 260
+    }
+  ]
+}

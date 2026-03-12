@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ stat_type|capitalize }} Stats - Madden 26 Tracker{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Player Stats</h1>
+
+<ul class="nav nav-tabs mb-4">
+    {% for st in stat_types %}
+    <li class="nav-item">
+        <a class="nav-link {% if st == stat_type %}active{% endif %}" href="/stats/{{ st }}">
+            {{ st|capitalize }}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% if not stat_rows %}
+<div class="alert alert-warning">
+    No {{ stat_type }} stats yet. Export weekly stats from the Companion App.
+</div>
+{% else %}
+<div class="table-responsive">
+    <table class="table table-hover table-striped">
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Team</th>
+                <th>Wk</th>
+                {% for col in columns %}
+                <th class="text-center">{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in stat_rows %}
+            <tr>
+                <td><strong>{{ row.name }}</strong></td>
+                <td>{{ row.team }}</td>
+                <td>{{ row.week }}</td>
+                {% for col in columns %}
+                <td class="text-center">{{ row[col] if row[col] != '' else '-' }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Schedule - Madden 26 Tracker{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Schedule</h1>
+
+{% if weeks %}
+<div class="mb-4">
+    <div class="btn-group flex-wrap" role="group">
+        {% for w in weeks %}
+        <a href="/schedule?week={{ w.week_number }}"
+           class="btn btn-sm {% if selected_week == w.week_number or (selected_week is none and loop.last) %}btn-light{% else %}btn-outline-secondary{% endif %}">
+            {% if w.week_type and w.week_type != 'reg' %}
+                {{ w.week_type }} {{ w.week_number }}
+            {% else %}
+                Week {{ w.week_number }}
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if not games %}
+<div class="alert alert-warning">
+    No schedule data yet. Export schedules from the Companion App.
+</div>
+{% else %}
+<div class="row g-3">
+    {% for game in games %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                {% set away = team_map.get(game.away_team_id) %}
+                {% set home = team_map.get(game.home_team_id) %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ away.abbr_name if away else 'Team ' ~ game.away_team_id }}</strong>
+                        <small class="text-secondary d-block">{{ away.display_name if away else '' }}</small>
+                    </div>
+                    <div class="text-center">
+                        {% if game.away_score is not none and game.home_score is not none %}
+                        <span class="fs-4 {% if game.away_score > game.home_score %}text-success{% endif %}">
+                            {{ game.away_score }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="text-center text-secondary my-1">@</div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div>
+                        <strong>{{ home.abbr_name if home else 'Team ' ~ game.home_team_id }}</strong>
+                        <small class="text-secondary d-block">{{ home.display_name if home else '' }}</small>
+                    </div>
+                    <div class="text-center">
+                        {% if game.away_score is not none and game.home_score is not none %}
+                        <span class="fs-4 {% if game.home_score > game.away_score %}text-success{% endif %}">
+                            {{ game.home_score }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if game.status %}
+                <div class="text-center mt-2">
+                    <small class="badge bg-secondary">{{ game.status }}</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Export Log - Madden 26 Tracker{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Export Log</h1>
+<p class="text-secondary">
+    Shows the last 100 POST requests received from the Companion App.
+    Click a row to expand the raw JSON payload.
+</p>
+
+{% if not exports %}
+<div class="alert alert-warning">
+    No exports received yet. Set up ngrok and export from the Companion App.
+</div>
+{% else %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Time (UTC)</th>
+                <th>Data Type</th>
+                <th>Endpoint</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for exp in exports %}
+            <tr class="cursor-pointer" data-bs-toggle="collapse" data-bs-target="#export-{{ exp.id }}">
+                <td>{{ exp.received_at.strftime('%Y-%m-%d %H:%M:%S') if exp.received_at else '' }}</td>
+                <td><span class="badge bg-info text-dark">{{ exp.data_type or 'unknown' }}</span></td>
+                <td class="font-monospace small">{{ exp.endpoint }}</td>
+                <td>{{ (exp.raw_json|length // 1024) }}KB</td>
+            </tr>
+            <tr class="collapse" id="export-{{ exp.id }}">
+                <td colspan="4">
+                    <pre class="bg-dark p-3 rounded small" style="max-height: 400px; overflow: auto;">{{ exp.raw_json[:5000] }}</pre>
+                    {% if exp.raw_json|length > 5000 %}
+                    <small class="text-secondary">Truncated to 5000 chars. Full payload saved to disk.</small>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,18 @@
+{
+  "gameScheduleInfoList": [
+    {
+      "homeTeamId": 1,
+      "awayTeamId": 2,
+      "homeScore": 28,
+      "awayScore": 24,
+      "status": "Complete"
+    },
+    {
+      "homeTeamId": 3,
+      "awayTeamId": 1,
+      "homeScore": 17,
+      "awayScore": 31,
+      "status": "Complete"
+    }
+  ]
+}
