@@ -100,6 +100,7 @@ class Player(Base):
     college = Column(String)
     years_pro = Column(Integer)
     dev_trait = Column(String)
+    portrait_id = Column(Integer)
     raw_json = Column(Text)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
@@ -111,6 +112,12 @@ class Player(Base):
     def full_name(self):
         parts = [p for p in [self.first_name, self.last_name] if p]
         return " ".join(parts) if parts else f"Player {self.roster_id}"
+
+    @property
+    def portrait_url(self):
+        if self.portrait_id:
+            return f"https://madden-assets-cdn.pulse.ea.com/madden26/portraits/{self.portrait_id}.png"
+        return None
 
 
 class Schedule(Base):

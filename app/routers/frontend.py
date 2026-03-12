@@ -202,37 +202,159 @@ STAT_COLUMNS = {
     ],
 }
 
+# Columns where MAX is more meaningful than SUM in season aggregation
+_MAX_COLUMNS = {"rushLongest", "recLongest", "fGLongest", "puntLongest"}
+
+# Columns that are derived (recalculated after summing base components)
+_DERIVED_COLUMNS = {"passCompPct", "passYdsPerAtt", "passerRating",
+                    "recCatchPct", "puntNetYdsPerAtt"}
+
+
+def _recalculate_derived(agg: dict):
+    """Recalculate percentage/average columns from summed base stats."""
+    att = agg.get("passAtt", 0)
+    if att:
+        comp = agg.get("passComp", 0)
+        yds = agg.get("passYds", 0)
+        tds = agg.get("passTDs", 0)
+        ints = agg.get("passInts", 0)
+        agg["passCompPct"] = round(comp / att * 100, 1)
+        agg["passYdsPerAtt"] = round(yds / att, 1)
+        # NFL passer rating formula
+        a = min(max(((comp / att) - 0.3) * 5, 0), 2.375)
+        b = min(max(((yds / att) - 3) * 0.25, 0), 2.375)
+        c = min(max((tds / att) * 20, 0), 2.375)
+        d = min(max(2.375 - ((ints / att) * 25), 0), 2.375)
+        agg["passerRating"] = round((a + b + c + d) / 6 * 100, 1)
+
+    punt_att = agg.get("puntAtt", 0)
+    if punt_att:
+        agg["puntNetYdsPerAtt"] = round(agg.get("puntNetYds", 0) / punt_att, 1)
+
+    # recCatchPct needs targets which we may not have — leave as-is if not calculable
+
+
+def _aggregate_season(player_stats, columns, team_map):
+    """Aggregate per-week stats into season totals by player."""
+    from collections import defaultdict
+    grouped = defaultdict(list)
+    for ps in player_stats:
+        grouped[ps.roster_id].append(ps)
+
+    rows = []
+    for roster_id, entries in grouped.items():
+        first = entries[0]
+        team = team_map.get(first.team_id)
+        agg = {
+            "name": first.full_name or f"Player {roster_id}",
+            "team": team.abbr_name if team else str(first.team_id or ""),
+            "week": "SZN",
+            "roster_id": roster_id,
+            "portrait_url": None,
+        }
+        # Sum/max across weeks
+        for col in columns:
+            if col in _DERIVED_COLUMNS:
+                continue  # recalculated below
+            vals = []
+            for ps in entries:
+                raw = json.loads(ps.raw_json) if ps.raw_json else {}
+                v = raw.get(col)
+                if v is not None and v != "":
+                    try:
+                        vals.append(float(v))
+                    except (ValueError, TypeError):
+                        pass
+            if vals:
+                agg[col] = int(max(vals)) if col in _MAX_COLUMNS else int(sum(vals))
+            else:
+                agg[col] = ""
+
+        _recalculate_derived(agg)
+
+        # Fill any remaining derived columns that weren't recalculated
+        for col in columns:
+            if col not in agg:
+                agg[col] = "-"
+
+        rows.append(agg)
+
+    return rows
+
 
 @router.get("/stats")
 @router.get("/stats/{stat_type}")
 async def stats(
     request: Request,
     stat_type: str = "passing",
+    week: str = Query("season"),
     db: Session = Depends(get_db),
 ):
     league_id = _get_league_id(db)
     team_map = _get_team_map(db, league_id)
 
+    # Build player map for headshot URLs
+    player_map = {}
+    if league_id:
+        players = db.query(Player).filter(Player.league_id == league_id).all()
+        player_map = {p.roster_id: p for p in players}
+
+    # Get available weeks for this stat type
+    week_query = (
+        db.query(PlayerStat.week_type, PlayerStat.week_number)
+        .filter(PlayerStat.stat_type == stat_type)
+    )
+    if league_id:
+        week_query = week_query.filter(PlayerStat.league_id == league_id)
+    weeks = week_query.distinct().order_by(PlayerStat.week_number).all()
+
+    # Query stats
     query = db.query(PlayerStat).filter(PlayerStat.stat_type == stat_type)
     if league_id:
         query = query.filter(PlayerStat.league_id == league_id)
 
-    player_stats = query.all()
+    is_season = week == "season"
+    if not is_season:
+        try:
+            week_num = int(week)
+            query = query.filter(PlayerStat.week_number == week_num)
+        except ValueError:
+            is_season = True
 
-    # Parse raw_json for display columns
-    stat_rows = []
+    player_stats = query.all()
     columns = STAT_COLUMNS.get(stat_type, [])
-    for ps in player_stats:
-        raw = json.loads(ps.raw_json) if ps.raw_json else {}
-        team = team_map.get(ps.team_id)
-        row = {
-            "name": ps.full_name or f"Player {ps.roster_id}",
-            "team": team.abbr_name if team else str(ps.team_id or ""),
-            "week": ps.week_number,
-        }
-        for col in columns:
-            row[col] = raw.get(col, "")
-        stat_rows.append(row)
+
+    if is_season and len(weeks) > 1:
+        stat_rows = _aggregate_season(player_stats, columns, team_map)
+    else:
+        stat_rows = []
+        for ps in player_stats:
+            raw = json.loads(ps.raw_json) if ps.raw_json else {}
+            team = team_map.get(ps.team_id)
+            row = {
+                "name": ps.full_name or f"Player {ps.roster_id}",
+                "team": team.abbr_name if team else str(ps.team_id or ""),
+                "week": ps.week_number + 1,
+                "roster_id": ps.roster_id,
+                "portrait_url": None,
+            }
+            for col in columns:
+                row[col] = raw.get(col, "")
+            stat_rows.append(row)
+
+    # Attach portrait URLs
+    for row in stat_rows:
+        player = player_map.get(row.get("roster_id"))
+        if player:
+            row["portrait_url"] = player.portrait_url
+
+    # Sort by primary stat column descending (first column that looks like a total)
+    sort_col = columns[0] if columns else None
+    if sort_col:
+        stat_rows.sort(
+            key=lambda r: (float(r.get(sort_col, 0)) if r.get(sort_col, "") != "" else 0),
+            reverse=True,
+        )
 
     return templates.TemplateResponse("stats.html", {
         "request": request,
@@ -241,6 +363,8 @@ async def stats(
         "columns": columns,
         "stat_rows": stat_rows,
         "team_map": team_map,
+        "weeks": weeks,
+        "selected_week": week,
     })
 
 

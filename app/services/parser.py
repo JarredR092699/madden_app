@@ -53,6 +53,7 @@ def parse_player(raw: dict) -> dict:
         "college": raw.get("college"),
         "years_pro": raw.get("yearsPro"),
         "dev_trait": raw.get("devTrait"),
+        "portrait_id": raw.get("portraitId"),
     }
 
 

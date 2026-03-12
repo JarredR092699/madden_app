@@ -7,12 +7,29 @@
 <ul class="nav nav-tabs mb-4">
     {% for st in stat_types %}
     <li class="nav-item">
-        <a class="nav-link {% if st == stat_type %}active{% endif %}" href="/stats/{{ st }}">
+        <a class="nav-link {% if st == stat_type %}active{% endif %}" href="/stats/{{ st }}?week={{ selected_week }}">
             {{ st|capitalize }}
         </a>
     </li>
     {% endfor %}
 </ul>
+
+{% if weeks %}
+<div class="mb-4">
+    <div class="btn-group flex-wrap" role="group">
+        <a href="/stats/{{ stat_type }}?week=season"
+           class="btn btn-sm {% if selected_week == 'season' %}btn-light{% else %}btn-outline-secondary{% endif %}">
+            Season
+        </a>
+        {% for w in weeks %}
+        <a href="/stats/{{ stat_type }}?week={{ w.week_number }}"
+           class="btn btn-sm {% if selected_week == w.week_number|string %}btn-light{% else %}btn-outline-secondary{% endif %}">
+            Week {{ w.week_number + 1 }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 {% if not stat_rows %}
 <div class="alert alert-warning">
@@ -34,7 +51,16 @@
         <tbody>
             {% for row in stat_rows %}
             <tr>
-                <td><strong>{{ row.name }}</strong></td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if row.portrait_url %}
+                        <img src="{{ row.portrait_url }}" width="28" height="28"
+                             class="rounded-circle" style="object-fit: cover;"
+                             onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 28 28%22><rect fill=%22%23555%22 width=%2228%22 height=%2228%22 rx=%2214%22/><text x=%2214%22 y=%2219%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2214%22>?</text></svg>';">
+                        {% endif %}
+                        <strong>{{ row.name }}</strong>
+                    </div>
+                </td>
                 <td>{{ row.team }}</td>
                 <td>{{ row.week }}</td>
                 {% for col in columns %}
