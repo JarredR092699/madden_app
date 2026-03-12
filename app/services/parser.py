@@ -68,6 +68,7 @@ def parse_schedule(raw: dict) -> dict:
         "home_score": raw.get("homeScore"),
         "away_score": raw.get("awayScore"),
         "status": _SCHEDULE_STATUS.get(raw_status, str(raw_status) if raw_status is not None else None),
+        "week_index": raw.get("weekIndex"),
     }
 
 

@@ -209,12 +209,16 @@ async def receive_schedules(
         away_id = parsed.get("away_team_id")
         if home_id is None or away_id is None:
             continue
+        # Use the JSON weekIndex (0-based) + 1 as the true week number,
+        # since the URL path number is just a batch index for schedules.
+        actual_week_index = parsed.get("week_index")
+        stored_week = (actual_week_index + 1) if actual_week_index is not None else week_number
         _upsert(
             db, Schedule,
             unique_fields={
                 "league_id": league_id,
                 "week_type": week_type,
-                "week_number": week_number,
+                "week_number": stored_week,
                 "home_team_id": home_id,
                 "away_team_id": away_id,
             },

@@ -334,7 +334,7 @@ async def stats(
             row = {
                 "name": ps.full_name or f"Player {ps.roster_id}",
                 "team": team.abbr_name if team else str(ps.team_id or ""),
-                "week": ps.week_number + 1,
+                "week": ps.week_number,
                 "roster_id": ps.roster_id,
                 "portrait_url": None,
             }
