@@ -65,8 +65,8 @@ class Standing(Base):
     conf_ties = Column(Integer, default=0)
     points_for = Column(Integer, default=0)
     points_against = Column(Integer, default=0)
-    streak_type = Column(String)
-    streak_count = Column(Integer, default=0)
+    conference_name = Column(String)
+    division_name = Column(String)
     raw_json = Column(Text)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 

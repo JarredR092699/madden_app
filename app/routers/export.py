@@ -264,6 +264,41 @@ async def receive_team_stats(
     return {"status": "ok", "team_stats_imported": count}
 
 
+# ── Team Stats (Madden 26 sends /team, not /teamstats) ───────────────────────
+
+@router.post("/{platform}/{league_id}/week/{week_type}/{week_number}/team")
+async def receive_team_stats_alt(
+    platform: str, league_id: str, week_type: str, week_number: int,
+    request: Request, db: Session = Depends(get_db)
+):
+    """Madden 26 posts team stats to /team rather than /teamstats."""
+    body = await request.json()
+    _save_raw(league_id, f"teamstats_{week_type}_wk{week_number}", body)
+    _log_export(db, request.url.path, platform, league_id,
+                f"teamstats_{week_type}_wk{week_number}", body)
+
+    stats_list = body.get("teamStatInfoList", [])
+    count = 0
+    for raw_stat in stats_list:
+        parsed = parse_team_stat(raw_stat)
+        team_id = parsed.get("team_id")
+        if team_id is None:
+            continue
+        _upsert(
+            db, TeamStat,
+            unique_fields={
+                "league_id": league_id,
+                "week_type": week_type,
+                "week_number": week_number,
+                "team_id": team_id,
+            },
+            update_fields={"raw_json": json.dumps(raw_stat)},
+        )
+        count += 1
+
+    return {"status": "ok", "team_stats_imported": count}
+
+
 # ── Player Stats (passing, rushing, receiving, defense, kicking, punting) ────
 
 STAT_TYPE_BODY_KEYS = {

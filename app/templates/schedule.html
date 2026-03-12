@@ -11,9 +11,9 @@
         <a href="/schedule?week={{ w.week_number }}"
            class="btn btn-sm {% if selected_week == w.week_number or (selected_week is none and loop.last) %}btn-light{% else %}btn-outline-secondary{% endif %}">
             {% if w.week_type and w.week_type != 'reg' %}
-                {{ w.week_type }} {{ w.week_number }}
+                {{ w.week_type }} {{ w.week_number + 1 }}
             {% else %}
-                Week {{ w.week_number }}
+                Week {{ w.week_number + 1 }}
             {% endif %}
         </a>
         {% endfor %}

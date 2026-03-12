@@ -80,12 +80,13 @@ async def standings(request: Request, db: Session = Depends(get_db)):
         Standing.total_losses.asc(),
     ).all()
 
-    # Group by division
+    # Group by division (prefer standing's own conf/div names from Madden 26
+    # standings JSON; fall back to team record for older data)
     divisions = {}
     for s in standings_list:
         team = team_map.get(s.team_id)
-        div_name = team.division_name if team else "Unknown"
-        conf_name = team.conference_name if team else "Unknown"
+        div_name = s.division_name or (team.division_name if team else None) or "Unknown"
+        conf_name = s.conference_name or (team.conference_name if team else None) or "Unknown"
         key = f"{conf_name} - {div_name}" if conf_name and div_name else (div_name or "Unknown")
         if key not in divisions:
             divisions[key] = []
@@ -173,9 +174,10 @@ async def roster(
 # ── Stats ─────────────────────────────────────────────────────────────────────
 
 STAT_COLUMNS = {
+    # Confirmed from real Madden 26 export
     "passing": [
-        "passAtt", "passComp", "passYds", "passTDs", "passInts",
-        "passerRating", "passSacks", "passLongest",
+        "passAtt", "passComp", "passCompPct", "passYds", "passYdsPerAtt",
+        "passTDs", "passInts", "passerRating", "passSacks",
     ],
     "rushing": [
         "rushAtt", "rushYds", "rushTDs", "rushFum", "rushLongest",
@@ -193,9 +195,10 @@ STAT_COLUMNS = {
         "fGMade", "fGAtt", "fGLongest", "xPMade", "xPAtt",
         "kickoffTBs",
     ],
+    # Confirmed from real Madden 26 export
     "punting": [
-        "puntAtt", "puntYds", "puntLongest", "puntIn20",
-        "puntTBs", "puntNetYds",
+        "puntAtt", "puntYds", "puntNetYds", "puntNetYdsPerAtt",
+        "puntLongest", "puntsIn20", "puntTBs",
     ],
 }
 

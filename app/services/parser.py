@@ -34,8 +34,8 @@ def parse_standing(raw: dict) -> dict:
         "conf_ties": raw.get("confTies"),
         "points_for": raw.get("ptsFor"),
         "points_against": raw.get("ptsAgainst"),
-        "streak_type": raw.get("winLossStreakType"),
-        "streak_count": raw.get("winLossStreakCount"),
+        "conference_name": raw.get("conferenceName"),
+        "division_name": raw.get("divisionName"),
     }
 
 
@@ -56,13 +56,17 @@ def parse_player(raw: dict) -> dict:
     }
 
 
+_SCHEDULE_STATUS = {1: "Scheduled", 2: "In Progress", 3: "Final"}
+
+
 def parse_schedule(raw: dict) -> dict:
+    raw_status = raw.get("status")
     return {
         "home_team_id": raw.get("homeTeamId"),
         "away_team_id": raw.get("awayTeamId"),
         "home_score": raw.get("homeScore"),
         "away_score": raw.get("awayScore"),
-        "status": raw.get("status"),
+        "status": _SCHEDULE_STATUS.get(raw_status, str(raw_status) if raw_status is not None else None),
     }
 
 
