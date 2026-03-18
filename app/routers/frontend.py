@@ -5,6 +5,7 @@ GET routes that serve HTML pages for viewing franchise data.
 import json
 
 from fastapi import APIRouter, Request, Depends, Query
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -382,4 +383,211 @@ async def exports(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("exports.html", {
         "request": request,
         "exports": raw_exports,
+    })
+
+
+# ── Player Detail API ────────────────────────────────────────────────────────
+
+DEV_TRAIT_MAP = {0: "Normal", 1: "Star", 2: "Superstar", 3: "X-Factor"}
+
+
+def _format_height(inches):
+    """Convert height in inches to feet'inches\" format."""
+    if inches is None:
+        return "-"
+    feet = inches // 12
+    remaining = inches % 12
+    return f"{feet}'{remaining}\""
+
+
+def _get_key_ratings(position: str, raw: dict) -> list:
+    """Return position-relevant ratings as list of {label, value} dicts."""
+    position = (position or "").upper()
+
+    qb_ratings = [
+        ("Throw Power", "throwPowerRating"),
+        ("Short Acc", "throwAccShortRating"),
+        ("Med Acc", "throwAccMidRating"),
+        ("Deep Acc", "throwAccDeepRating"),
+        ("Throw on Run", "throwOnRunRating"),
+        ("Under Pressure", "throwUnderPressureRating"),
+        ("Speed", "speedRating"),
+        ("Break Sack", "breakSackRating"),
+    ]
+
+    hb_ratings = [
+        ("Speed", "speedRating"),
+        ("Acceleration", "accelRating"),
+        ("Agility", "agilityRating"),
+        ("Carrying", "carryRating"),
+        ("Juke Move", "jukeMoveRating"),
+        ("Break Tackle", "breakTackleRating"),
+        ("Trucking", "truckRating"),
+        ("Catching", "catchRating"),
+    ]
+
+    wr_te_ratings = [
+        ("Speed", "speedRating"),
+        ("Acceleration", "accelRating"),
+        ("Catching", "catchRating"),
+        ("Spec Catch", "specCatchRating"),
+        ("CIT", "cITRating"),
+        ("Short Route", "routeRunShortRating"),
+        ("Med Route", "routeRunMedRating"),
+        ("Deep Route", "routeRunDeepRating"),
+    ]
+
+    ol_ratings = [
+        ("Pass Block", "passBlockRating"),
+        ("Run Block", "runBlockRating"),
+        ("Impact Block", "impactBlockRating"),
+        ("Strength", "strengthRating"),
+        ("Awareness", "awarenessRating"),
+    ]
+
+    dl_ratings = [
+        ("Block Shed", "blockShedRating"),
+        ("Tackle", "tackleRating"),
+        ("Power Moves", "powerMovesRating"),
+        ("Finesse Moves", "finesseMovesRating"),
+        ("Speed", "speedRating"),
+        ("Strength", "strengthRating"),
+        ("Pursuit", "pursuitRating"),
+    ]
+
+    lb_ratings = [
+        ("Tackle", "tackleRating"),
+        ("Block Shed", "blockShedRating"),
+        ("Pursuit", "pursuitRating"),
+        ("Speed", "speedRating"),
+        ("Zone Coverage", "zoneCovRating"),
+        ("Man Coverage", "manCovRating"),
+        ("Hit Power", "hitPowerRating"),
+        ("Play Recognition", "playRecRating"),
+    ]
+
+    db_ratings = [
+        ("Speed", "speedRating"),
+        ("Acceleration", "accelRating"),
+        ("Man Coverage", "manCovRating"),
+        ("Zone Coverage", "zoneCovRating"),
+        ("Press", "pressRating"),
+        ("Play Recognition", "playRecRating"),
+        ("Catching", "catchRating"),
+    ]
+
+    k_p_ratings = [
+        ("Kick Power", "kickPowerRating"),
+        ("Kick Accuracy", "kickAccRating"),
+        ("Awareness", "awarenessRating"),
+    ]
+
+    default_ratings = [
+        ("Speed", "speedRating"),
+        ("Acceleration", "accelRating"),
+        ("Agility", "agilityRating"),
+        ("Strength", "strengthRating"),
+        ("Awareness", "awarenessRating"),
+    ]
+
+    rating_map = {
+        "QB": qb_ratings,
+        "HB": hb_ratings,
+        "FB": hb_ratings,
+        "WR": wr_te_ratings,
+        "TE": wr_te_ratings,
+        "LT": ol_ratings, "LG": ol_ratings, "C": ol_ratings,
+        "RG": ol_ratings, "RT": ol_ratings,
+        "LE": dl_ratings, "RE": dl_ratings, "DT": dl_ratings,
+        "LOLB": lb_ratings, "MLB": lb_ratings, "ROLB": lb_ratings,
+        "CB": db_ratings, "FS": db_ratings, "SS": db_ratings,
+        "K": k_p_ratings, "P": k_p_ratings,
+    }
+
+    selected = rating_map.get(position, default_ratings)
+    result = []
+    for label, key in selected:
+        val = raw.get(key)
+        if val is not None:
+            result.append({"label": label, "value": val})
+    return result
+
+
+@router.get("/api/player/{roster_id}")
+async def player_detail_api(
+    roster_id: int,
+    db: Session = Depends(get_db),
+):
+    league_id = _get_league_id(db)
+    player = db.query(Player).filter(
+        Player.league_id == league_id,
+        Player.roster_id == roster_id,
+    ).first()
+
+    if not player:
+        return JSONResponse({"error": "Player not found"}, status_code=404)
+
+    team_map = _get_team_map(db, league_id)
+    team = team_map.get(player.team_id)
+
+    raw = json.loads(player.raw_json) if player.raw_json else {}
+
+    # Dev trait: model stores as String, try to map int->name
+    dev_raw = player.dev_trait
+    try:
+        dev_display = DEV_TRAIT_MAP.get(int(dev_raw), dev_raw)
+    except (TypeError, ValueError):
+        dev_display = dev_raw if dev_raw else "-"
+
+    # Bio
+    bio = {
+        "name": player.full_name,
+        "position": player.position or raw.get("position", "-"),
+        "overall": player.overall_rating,
+        "age": player.age,
+        "height": _format_height(player.height),
+        "weight": player.weight,
+        "college": player.college or "-",
+        "years_pro": player.years_pro,
+        "jersey_num": player.jersey_num,
+        "dev_trait": dev_display,
+        "team_name": team.display_name if team else "-",
+        "team_abbr": team.abbr_name if team else "-",
+        "portrait_url": player.portrait_url,
+    }
+
+    # Key ratings
+    ratings = _get_key_ratings(player.position, raw)
+
+    # Contract info
+    contract = {
+        "salary": raw.get("contractSalary"),
+        "bonus": raw.get("contractBonus"),
+        "cap_hit": raw.get("capHit"),
+        "years_left": raw.get("contractYearsLeft"),
+        "cap_release_penalty": raw.get("capReleasePenalty"),
+    }
+
+    # Season stats - get all stat entries for this player
+    player_stats = db.query(PlayerStat).filter(
+        PlayerStat.league_id == league_id,
+        PlayerStat.roster_id == roster_id,
+    ).order_by(PlayerStat.stat_type, PlayerStat.week_number).all()
+
+    stats_by_type = {}
+    for ps in player_stats:
+        if ps.stat_type not in stats_by_type:
+            stats_by_type[ps.stat_type] = []
+        raw_stat = json.loads(ps.raw_json) if ps.raw_json else {}
+        entry = {"week": ps.week_number}
+        columns = STAT_COLUMNS.get(ps.stat_type, [])
+        for col in columns:
+            entry[col] = raw_stat.get(col, "-")
+        stats_by_type[ps.stat_type].append(entry)
+
+    return JSONResponse({
+        "bio": bio,
+        "ratings": ratings,
+        "contract": contract,
+        "stats": stats_by_type,
     })

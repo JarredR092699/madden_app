@@ -41,6 +41,142 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Player Detail Modal -->
+    <div class="modal fade" id="playerModal" tabindex="-1" aria-labelledby="playerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="playerModalLabel">Player Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="playerModalBody">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openPlayerModal(rosterId) {
+        const modal = new bootstrap.Modal(document.getElementById('playerModal'));
+        const body = document.getElementById('playerModalBody');
+
+        // Show loading spinner
+        body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-secondary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        modal.show();
+
+        fetch(`/api/player/${rosterId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    body.innerHTML = `<div class="alert alert-warning">${data.error}</div>`;
+                    return;
+                }
+                body.innerHTML = buildPlayerDetailHTML(data);
+            })
+            .catch(err => {
+                body.innerHTML = `<div class="alert alert-danger">Failed to load player details.</div>`;
+            });
+    }
+
+    function buildPlayerDetailHTML(data) {
+        const bio = data.bio;
+        const ratings = data.ratings;
+        const contract = data.contract;
+        const stats = data.stats;
+
+        // Build headshot + bio header
+        let html = '<div class="row mb-4">';
+
+        // Portrait
+        html += '<div class="col-auto">';
+        if (bio.portrait_url) {
+            html += `<img src="${bio.portrait_url}" width="96" height="96" class="rounded-circle" style="object-fit: cover;" onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><rect fill=%22%23555%22 width=%2296%22 height=%2296%22 rx=%2248%22/><text x=%2248%22 y=%2262%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2240%22>?</text></svg>';">`;
+        } else {
+            html += `<div style="width:96px;height:96px;background:#555;border-radius:50%;display:flex;align-items:center;justify-content:center;"><span style="font-size:40px;color:#999">?</span></div>`;
+        }
+        html += '</div>';
+
+        // Bio info
+        html += '<div class="col">';
+        html += `<h4 class="mb-1">${bio.name || 'Unknown'}</h4>`;
+        html += `<div class="text-secondary mb-2">${bio.team_name} &middot; #${bio.jersey_num || '-'} &middot; ${bio.position || '-'}</div>`;
+        html += '<div class="row g-3">';
+        html += `<div class="col-auto"><small class="text-secondary">OVR</small><br><strong class="fs-5">${bio.overall || '-'}</strong></div>`;
+        html += `<div class="col-auto"><small class="text-secondary">Age</small><br><strong>${bio.age || '-'}</strong></div>`;
+        html += `<div class="col-auto"><small class="text-secondary">Height</small><br><strong>${bio.height || '-'}</strong></div>`;
+        html += `<div class="col-auto"><small class="text-secondary">Weight</small><br><strong>${bio.weight ? bio.weight + ' lbs' : '-'}</strong></div>`;
+        html += `<div class="col-auto"><small class="text-secondary">College</small><br><strong>${bio.college || '-'}</strong></div>`;
+        html += `<div class="col-auto"><small class="text-secondary">Exp</small><br><strong>${bio.years_pro != null ? bio.years_pro + ' yr' : '-'}</strong></div>`;
+        html += `<div class="col-auto"><small class="text-secondary">Dev</small><br><strong>${bio.dev_trait || '-'}</strong></div>`;
+        html += '</div>';
+        html += '</div></div>';
+
+        // Key Ratings
+        if (ratings && ratings.length > 0) {
+            html += '<h6 class="mb-2">Key Ratings</h6>';
+            html += '<div class="row g-2 mb-4">';
+            for (const r of ratings) {
+                const colorClass = r.value >= 90 ? 'text-success' : r.value >= 80 ? 'text-info' : r.value >= 70 ? 'text-warning' : 'text-secondary';
+                html += `<div class="col-4 col-sm-3"><div class="card card-body p-2 text-center"><small class="text-secondary">${r.label}</small><br><strong class="${colorClass}">${r.value}</strong></div></div>`;
+            }
+            html += '</div>';
+        }
+
+        // Contract
+        if (contract && (contract.salary || contract.cap_hit)) {
+            html += '<h6 class="mb-2">Contract</h6>';
+            html += '<div class="row g-2 mb-4">';
+            if (contract.cap_hit != null) html += `<div class="col-auto"><small class="text-secondary">Cap Hit</small><br><strong>$${Number(contract.cap_hit).toLocaleString()}</strong></div>`;
+            if (contract.salary != null) html += `<div class="col-auto"><small class="text-secondary">Salary</small><br><strong>$${Number(contract.salary).toLocaleString()}</strong></div>`;
+            if (contract.bonus != null) html += `<div class="col-auto"><small class="text-secondary">Bonus</small><br><strong>$${Number(contract.bonus).toLocaleString()}</strong></div>`;
+            if (contract.years_left != null) html += `<div class="col-auto"><small class="text-secondary">Years Left</small><br><strong>${contract.years_left}</strong></div>`;
+            if (contract.cap_release_penalty != null) html += `<div class="col-auto"><small class="text-secondary">Release Penalty</small><br><strong>$${Number(contract.cap_release_penalty).toLocaleString()}</strong></div>`;
+            html += '</div>';
+        }
+
+        // Season Stats
+        const statTypes = Object.keys(stats);
+        if (statTypes.length > 0) {
+            html += '<h6 class="mb-2">Stats</h6>';
+
+            for (const st of statTypes) {
+                const entries = stats[st];
+                if (!entries || entries.length === 0) continue;
+
+                html += `<p class="mb-1 text-secondary"><strong>${st.charAt(0).toUpperCase() + st.slice(1)}</strong></p>`;
+
+                // Get all columns (keys except 'week')
+                const cols = Object.keys(entries[0]).filter(k => k !== 'week');
+
+                html += '<div class="table-responsive mb-3"><table class="table table-sm table-striped">';
+                html += '<thead><tr><th>Wk</th>';
+                for (const col of cols) {
+                    html += `<th class="text-center">${col}</th>`;
+                }
+                html += '</tr></thead><tbody>';
+
+                for (const entry of entries) {
+                    html += `<tr><td>${entry.week}</td>`;
+                    for (const col of cols) {
+                        html += `<td class="text-center">${entry[col] !== null && entry[col] !== '' ? entry[col] : '-'}</td>`;
+                    }
+                    html += '</tr>';
+                }
+
+                html += '</tbody></table></div>';
+            }
+        }
+
+        return html;
+    }
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

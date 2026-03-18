@@ -253,12 +253,16 @@ async def receive_team_stats(
         team_id = parsed.get("team_id")
         if team_id is None:
             continue
+        # Use the JSON weekIndex (0-based) + 1 as the true week number,
+        # since the URL path number is just a batch index for team stats.
+        actual_week_index = parsed.get("week_index")
+        stored_week = (actual_week_index + 1) if actual_week_index is not None else week_number
         _upsert(
             db, TeamStat,
             unique_fields={
                 "league_id": league_id,
                 "week_type": week_type,
-                "week_number": week_number,
+                "week_number": stored_week,
                 "team_id": team_id,
             },
             update_fields={"raw_json": json.dumps(raw_stat)},
@@ -288,12 +292,16 @@ async def receive_team_stats_alt(
         team_id = parsed.get("team_id")
         if team_id is None:
             continue
+        # Use the JSON weekIndex (0-based) + 1 as the true week number,
+        # since the URL path number is just a batch index for team stats.
+        actual_week_index = parsed.get("week_index")
+        stored_week = (actual_week_index + 1) if actual_week_index is not None else week_number
         _upsert(
             db, TeamStat,
             unique_fields={
                 "league_id": league_id,
                 "week_type": week_type,
-                "week_number": week_number,
+                "week_number": stored_week,
                 "team_id": team_id,
             },
             update_fields={"raw_json": json.dumps(raw_stat)},

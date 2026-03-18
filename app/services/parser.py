@@ -83,4 +83,5 @@ def parse_player_stat(raw: dict) -> dict:
 def parse_team_stat(raw: dict) -> dict:
     return {
         "team_id": raw.get("teamId"),
+        "week_index": raw.get("weekIndex"),
     }
